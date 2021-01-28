@@ -1,0 +1,52 @@
+---
+-
+  name: Set some installation parameters
+  debconf:
+    name: phpmyadmin
+    question: "{{item.question}}"
+    value: '{{item.value}}'
+    vtype: "{{item.vtype}}"
+  with_items:
+    -
+      question: phpmyadmin/dbconfig-install
+      value: 'true'
+      vtype: 'boolean'
+    -
+      question: phpmyadmin/app-password-confirm
+      value: '{{db_root_pass}}'
+      vtype: 'password'
+    -
+      question: phpmyadmin/mysql/admin-pass
+      value: '{{db_root_pass}}'
+      vtype: 'password'
+    -
+      question: phpmyadmin/mysql/app-pass
+      value: '{{db_root_pass}}'
+      vtype: 'password'
+    -
+      question: phpmyadmin/reconfigure-webserver
+      value: 'apache2'
+      vtype: 'multiselect'
+    -
+      question: phpmyadmin/internal/skip-preseed
+      value: 'true'
+      vtype: 'boolean'
+-
+  name: Installing packages
+  apt:
+    name: "{{packages}}"
+    update_cache: yes
+    state: present
+-
+  name: Enable php mod
+  shell: phpenmod mbstring
+-
+  name: Fix phpmyadmin file bug
+  shell: 
+    cmd: sed -i "s/|\s*\((count(\$analyzed_sql_results\['select_expr'\]\)/| (\1)/g" /usr/share/phpmyadmin/libraries/sql.lib.php
+    warn: no
+-
+  name: Restart Apache
+  service: 
+    name: apache2
+    state: restarted

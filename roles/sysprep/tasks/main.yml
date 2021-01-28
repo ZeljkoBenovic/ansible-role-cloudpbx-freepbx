@@ -1,0 +1,25 @@
+---
+-
+  name: "Add NodeJS Repo"
+  shell: curl -sL https://deb.nodesource.com/setup_11.x | sudo -E bash - > /tmp/node.log
+  args:
+    creates: /tmp/node.log
+    warn: no
+-
+  name: "Updating System"
+  apt:
+    upgrade: full
+    update_cache: yes
+-
+  name: Installing Packages
+  apt:
+    name: "{{packages}}"
+    state: present
+- 
+  name: Install pymysql ansible modules
+  pip:
+    name: pymysql
+    state: present
+-
+  name: Reboot host
+  reboot:

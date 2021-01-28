@@ -1,0 +1,11 @@
+[Unit]
+Description=Start FreePBX
+
+[Service]
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/sbin/fwconsole start
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

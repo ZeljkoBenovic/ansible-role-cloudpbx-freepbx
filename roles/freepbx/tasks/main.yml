@@ -1,0 +1,74 @@
+---
+-
+  name: Downloading FreePBX {{fpbx_ver}}
+  get_url:
+    url: http://mirror.freepbx.org/modules/packages/freepbx/freepbx-{{fpbx_ver}}-latest.tgz
+    dest: /usr/src
+-
+  name: Unpacking FreePBX tarball
+  unarchive:
+    src: /usr/src/freepbx-{{fpbx_ver}}-latest.tgz
+    dest: /usr/src
+    remote_src: yes
+-
+  name: Removing FreePBX tarball
+  file:
+    path: /usr/src/freepbx-{{fpbx_ver}}-latest.tgz
+    state: absent
+-
+  name: Creating some asterisk files
+  file:
+    path: /etc/asterisk/{{item}}.conf
+    state: touch
+  with_items:
+    - modules
+    - cdr
+-
+  name: Starting FreePBX
+  shell: 
+    cmd: "{{item}}"
+    chdir: /usr/src/freepbx
+  with_items:
+    - ./start_asterisk start
+    - ./install -n --dbuser root --dbpass {{db_root_pass}}
+-
+  name: Install FPBX Modules
+  shell: "{{item}}"
+  with_items:
+    - fwconsole ma enablerepo standard
+    - fwconsole ma enablerepo extended
+    - fwconsole ma downloadinstall arimanager
+    - fwconsole ma downloadinstall framework
+    - fwconsole ma downloadinstall filestore
+    - fwconsole ma downloadinstall calendar
+    - fwconsole ma downloadinstall announcement
+    - fwconsole ma downloadinstall asterisk-cli
+    - fwconsole ma downloadinstall asteriskinfo
+    - fwconsole ma downloadinstall backup
+    - fwconsole ma downloadinstall iaxsettings
+    - fwconsole ma downloadinstall configedit
+    - fwconsole ma downloadinstall ivr
+    - fwconsole ma downloadinstall miscdests
+    - fwconsole ma downloadinstall outroutemsg
+    - fwconsole ma downloadinstall timeconditions
+    - fwconsole reload
+    - fwconsole restart
+    ##  long time to Reload hack
+    - fwconsole setting SIGNATURECHECK 0
+-
+  name: Create FreePBX Startup service
+  template:
+    src: freepbx.service.j2
+    dest: /etc/systemd/system/freepbx.service
+-
+  name: Enable FreePBX Service
+  service:
+    name: freepbx.service
+    enabled: yes
+-
+  name: Set hostname
+  hostname:
+    name: fpbx.local
+-
+  name: Reboot host
+  reboot:

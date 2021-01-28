@@ -1,0 +1,13 @@
+## Deploy Cloud PBX Freepbx ####
+## Tested on Ubuntu Server 18.04 ###
+---
+-
+  name: Depoying CloudPBX Freepbx
+  hosts: fpbx
+  roles:
+    - sysprep
+    - db_prep
+    - asterisk
+    - freepbx
+    - phpmyadmin
+    - webmin

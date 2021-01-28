@@ -1,0 +1,67 @@
+---
+# Setup ODBC connector
+-
+  name: Download MariaDB Connector
+  get_url:
+    url: https://downloads.mysql.com/archives/get/p/10/file/mysql-connector-odbc-5.3.10-linux-ubuntu17.10-x86-64bit.tar.gz
+    dest: /usr/src
+-
+  name: Untar MariaDB Connector
+  unarchive:
+    src: /usr/src/mysql-connector-odbc-5.3.10-linux-ubuntu17.10-x86-64bit.tar.gz
+    dest: /usr/src
+    remote_src: yes
+-
+  name: Copy ODBC Connector lib files
+  copy:
+    remote_src: yes
+    src: /usr/src/mysql-connector-odbc-5.3.10-linux-ubuntu17.10-x86-64bit/lib/
+    dest: /usr/lib/odbc
+-
+  name: Install Legasy Pear Requirements
+  shell: 
+    cmd: pear install Console_Getopt > /tmp/pear.log
+    creates: /tmp/pear.log
+
+## START: Secure DB
+-
+  name: Secure DB - Set root password
+  mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: root
+    host: "{{item}}"
+    password: "{{db_root_pass}}"
+    state: present
+  with_items:
+    - 127.0.0.1
+    - ::1
+    - localhost
+-
+  name: Secure DB - delete anonymous users
+  mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: ""
+    host: "{{item}}"
+    state: absent
+  with_items:
+    - localhost
+    - "{{ansible_nodename}}"
+-
+  name: Secure DB - delete hostname based root
+  mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: root
+    host: "{{ansible_nodename}}"
+    state: absent
+-
+  name: Secure DB - Remove Test DB
+  mysql_db:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: test
+    state: absent
+-
+  name: Disable linux socket root login
+  community.mysql.mysql_query:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    query: UPDATE mysql.user SET plugin = '' WHERE user = 'root' AND host = 'localhost'
+## END Secure DB
