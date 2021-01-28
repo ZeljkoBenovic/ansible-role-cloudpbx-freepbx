@@ -22,6 +22,12 @@
   shell: 
     cmd: pear install Console_Getopt > /tmp/pear.log
     creates: /tmp/pear.log
+-
+  name: Change DB listener from localhost to all interfaces
+  replace:
+    path: '/etc/mysql/mariadb.conf.d/50-server.cnf'
+    regexp: '127.0.0.1'
+    replace: '0.0.0.0'
 
 ## START: Secure DB
 -
