@@ -4,6 +4,7 @@
 -
   name: Depoying CloudPBX Freepbx
   hosts: fpbx
+  become: yes
   roles:
     - sysprep
     - db_prep

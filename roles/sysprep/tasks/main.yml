@@ -21,5 +21,12 @@
     name: pymysql
     state: present
 -
+  name: Set swappiness
+  lineinfile:
+    path: /etc/sysctl.conf
+    line: vm.swappiness=10
+    backup: yes
+    state: present
+-
   name: Reboot host
   reboot:
