@@ -51,6 +51,7 @@
     - fwconsole ma downloadinstall miscdests
     - fwconsole ma downloadinstall outroutemsg
     - fwconsole ma downloadinstall timeconditions
+    - fwconsole ma downloadinstall queues
     - fwconsole reload
     - fwconsole restart
     ##  long time to Reload hack
