@@ -1,0 +1,84 @@
+---
+- name: Downloading FreePBX {{ fpbx_ver }}
+  ansible.builtin.get_url:
+    url: http://mirror.freepbx.org/modules/packages/freepbx/freepbx-{{ fpbx_ver }}-latest.tgz
+    dest: /usr/src
+    mode: '0664'
+
+- name: Unpacking FreePBX tarball
+  ansible.builtin.unarchive:
+    src: /usr/src/freepbx-{{ fpbx_ver }}-latest.tgz
+    dest: /usr/src
+    remote_src: true
+
+- name: Removing FreePBX tarball
+  ansible.builtin.file:
+    path: /usr/src/freepbx-{{ fpbx_ver }}-latest.tgz
+    state: absent
+
+- name: Creating some asterisk files
+  ansible.builtin.file:
+    path: /etc/asterisk/{{ item }}.conf
+    state: touch
+    mode: '0664'
+  with_items:
+    - modules
+    - cdr
+
+- name: Starting FreePBX
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+    chdir: /usr/src/freepbx
+    creates: start-fpbx.ok
+    executable: /bin/bash
+  no_log: false
+  with_items:
+    - ./start_asterisk start
+    - ./install -n --dbuser root --dbpass {{ db_root_pass }}
+    - touch start-fpbx.ok
+
+- name: Install FreePBX Modules
+  ansible.builtin.shell: "{{ item }}"
+  args:
+    creates: fpbx-started.ok
+    executable: /bin/bash
+  with_items:
+    - fwconsole ma enablerepo standard
+    - fwconsole ma enablerepo extended
+    - fwconsole ma downloadinstall arimanager
+    - fwconsole ma downloadinstall framework
+    - fwconsole ma downloadinstall filestore
+    - fwconsole ma downloadinstall calendar
+    - fwconsole ma downloadinstall announcement
+    - fwconsole ma downloadinstall asterisk-cli
+    - fwconsole ma downloadinstall asteriskinfo
+    - fwconsole ma downloadinstall backup
+    - fwconsole ma downloadinstall iaxsettings
+    - fwconsole ma downloadinstall configedit
+    - fwconsole ma downloadinstall ivr
+    - fwconsole ma downloadinstall miscdests
+    - fwconsole ma downloadinstall outroutemsg
+    - fwconsole ma downloadinstall timeconditions
+    - fwconsole ma downloadinstall queues
+    - fwconsole ma upgradeall
+    - fwconsole reload
+    - fwconsole restart
+    - touch fpbx-started.ok
+
+- name: Create FreePBX Startup service
+  ansible.builtin.template:
+    src: freepbx.service.j2
+    dest: /etc/systemd/system/freepbx.service
+    mode: '0664'
+
+- name: Enable FreePBX Service
+  ansible.builtin.service:
+    name: freepbx.service
+    enabled: true
+
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: fpbx.local
+
+- name: Reboot host
+  ansible.builtin.reboot:

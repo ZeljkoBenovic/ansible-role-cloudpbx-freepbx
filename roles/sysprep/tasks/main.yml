@@ -1,0 +1,73 @@
+---
+- name: Initial system upgrade
+  ansible.builtin.apt:
+    upgrade: full
+    update_cache: true
+
+- name: Add NodeJS Repo
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash - > /tmp/node.log
+  args:
+    creates: /tmp/node.log
+    warn: false
+    executable: /bin/bash
+
+- name: Install php7.4 install prerequisite
+  ansible.builtin.apt:
+    name: software-properties-common
+    state: present
+
+- name: Add php7.4 repo
+  ansible.builtin.apt_repository:
+    repo: ppa:ondrej/php
+
+- name: Updating System
+  ansible.builtin.apt:
+    upgrade: full
+    update_cache: true
+
+- name: Installing Packages
+  ansible.builtin.apt:
+    name: "{{ packages }}"
+    state: present
+
+- name: Install Ubuntu20.04 specific package
+  ansible.builtin.apt:
+    name: python-dev
+    state: present
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '20'
+
+- name: Install Ubuntu22.04 specific package
+  ansible.builtin.apt:
+    name: python3-dev
+    state: present
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '22'
+
+- name: Install pymysql ansible modules
+  ansible.builtin.pip:
+    name: pymysql
+    state: present
+
+- name: Set defatult php7.4 as default
+  ansible.builtin.shell: update-alternatives --set php /usr/bin/php7.4 > php-default.ok
+  args:
+    creates: php-default.ok
+    executable: /bin/bash
+
+- name: Set swappiness
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.conf
+    line: vm.swappiness=10
+    backup: true
+    state: present
+
+- name: Install Legacy Pear Requirements
+  ansible.builtin.shell:
+    cmd: pear install Console_Getopt > /tmp/pear.log
+    creates: /tmp/pear.log
+  when: fpbx_ver == '15.0'
+  ignore_errors: true
+
+- name: Reboot host
+  ansible.builtin.reboot:

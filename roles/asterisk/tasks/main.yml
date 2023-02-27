@@ -1,0 +1,171 @@
+---
+- name: Download Asterisk {{ ast_ver }}
+  ansible.builtin.get_url:
+    url: http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-{{ ast_ver }}-current.tar.gz
+    dest: /usr/src
+    mode: '0664'
+
+- name: Untar Asterisk tarball
+  ansible.builtin.unarchive:
+    src: /usr/src/asterisk-{{ ast_ver }}-current.tar.gz
+    dest: /usr/src
+    remote_src: true
+
+- name: Remove Asterisk tarball
+  ansible.builtin.file:
+    path: /usr/src/asterisk-{{ ast_ver }}-current.tar.gz
+    state: absent
+
+- name: Find extracted folder name for Asterisk {{ ast_ver }}
+  ansible.builtin.find:
+    paths: /usr/src
+    file_type: directory
+    recurse: false
+    patterns: ^asterisk.*$
+    use_regex: true
+  register: 'ast_install_dir'
+
+- name: Make Libvpb1 install non-interactive
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+    creates: libvpb1.ok
+    executable: /bin/bash
+  with_items:
+    - set -o pipefail
+    - echo 'libvpb1 libvpb1/countrycode string 381' | sudo debconf-set-selections -v
+    - touch libvpb1.ok
+
+- name: Install Asterisk Prerequisites
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+    chdir: "{{ ast_install_dir.files[0].path }}/contrib/scripts"
+    creates: asterisk-prereq.ok
+    executable: /bin/bash
+  with_items:
+    - ./get_mp3_source.sh
+    - ./install_prereq install
+    - touch asterisk-prereq.ok
+
+- name: Run configure asterisk scripts
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+    chdir: "{{ ast_install_dir.files[0].path }}"
+    creates: ast-scripts.ok
+    executable: /bin/bash
+  with_items:
+    - ./configure --with-pjproject-bundled --with-jansson-bundled
+    - touch ast-scripts.ok
+
+- name: Select make options
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+    chdir: "{{ ast_install_dir.files[0].path }}"
+    creates: ast-make-menu.ok
+    executable: /bin/bash
+  with_items:
+    - make menuselect.makeopts
+    - menuselect/menuselect --enable app_macro --enable format_mp3 menuselect.makeopts
+    - touch ast-make-menu.ok
+
+- name: Compile and Install Asterisk
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+    chdir: "{{ ast_install_dir.files[0].path }}"
+    creates: compiled-asterisk.ok
+    executable: /bin/bash
+  with_items:
+    - make
+    - contrib/scripts/get_mp3_source.sh
+    - make install
+    - make config
+    - ldconfig
+    - update-rc.d -f asterisk remove
+    - touch compiled-asterisk.ok
+
+- name: Add asterisk users
+  ansible.builtin.user:
+    name: asterisk
+    comment: Asterisk user
+
+- name: Seting folder permitions for asterisk user
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: asterisk
+    group: asterisk
+    state: directory
+    recurse: true
+  with_items:
+    - /var/run/asterisk
+    - /etc/asterisk
+    - /var/lib/asterisk
+    - /var/log/asterisk
+    - /var/spool/asterisk
+    - /usr/lib/asterisk
+
+- name: Remove default web folder
+  ansible.builtin.file:
+    path: /var/www/html
+    state: absent
+
+- name: Find php version folder name
+  ansible.builtin.find:
+    paths: /etc/php
+    file_type: directory
+    recurse: false
+    patterns: ^7.*$
+    use_regex: true
+  register: 'php_ver'
+
+- name: Making some Apache config changes
+  ansible.builtin.lineinfile:
+    path: "{{ item.path }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    -
+      path: "{{ php_ver.files[0].path }}/apache2/php.ini"
+      regexp: "upload_max_filesize ="
+      line: "upload_max_filesize = 20M"
+    -
+      path: "{{ php_ver.files[0].path }}/apache2/php.ini"
+      regexp: "memory_limit ="
+      line: "memory_limit = 256M"
+    -
+      path: /etc/apache2/envvars
+      regexp: export APACHE_RUN_USER=
+      line: export APACHE_RUN_USER=asterisk
+    -
+      path: /etc/apache2/envvars
+      regexp: export APACHE_RUN_GROUP=
+      line: export APACHE_RUN_GROUP=asterisk
+
+- name: Some more Apache changes
+  ansible.builtin.replace:
+    path: '/etc/apache2/apache2.conf'
+    regexp: 'AllowOverride None'
+    replace: 'AllowOverride All'
+
+- name: Enable Apache Rewrite Mod
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+    creates: apache-rewrite.ok
+    executable: /bin/bash
+  with_items:
+    - a2enmod rewrite
+    - touch apache-rewrite.ok
+
+- name: Restarting Apache Service
+  ansible.builtin.service:
+    name: apache2
+    state: restarted
+
+- name: Seting ODBC files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0664'
+  with_items:
+    - src: odbc.ini.j2
+      dest: /etc/odbc.ini
+    - src: odbcinst.ini.j2
+      dest: /etc/odbcinst.ini

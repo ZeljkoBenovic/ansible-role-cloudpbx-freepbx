@@ -1,0 +1,54 @@
+---
+-
+  name: Set some installation parameters
+  ansible.builtin.debconf:
+    name: phpmyadmin
+    question: "{{ item.question }}"
+    value: '{{ item.value }}'
+    vtype: "{{ item.vtype }}"
+  no_log: true
+  with_items:
+    -
+      question: phpmyadmin/dbconfig-install
+      value: 'true'
+      vtype: 'boolean'
+    -
+      question: phpmyadmin/app-password-confirm
+      value: '{{ db_root_pass }}'
+      vtype: 'password'
+    -
+      question: phpmyadmin/mysql/admin-pass
+      value: '{{ db_root_pass }}'
+      vtype: 'password'
+    -
+      question: phpmyadmin/mysql/app-pass
+      value: '{{ db_root_pass }}'
+      vtype: 'password'
+    -
+      question: phpmyadmin/reconfigure-webserver
+      value: 'apache2'
+      vtype: 'multiselect'
+    -
+      question: phpmyadmin/internal/skip-preseed
+      value: 'true'
+      vtype: 'boolean'
+-
+  name: Installing packages
+  ansible.builtin.apt:
+    name: "{{ packages }}"
+    update_cache: true
+    state: present
+-
+  name: Enable php mod
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+    creates: phpenmod.ok
+    executable: /bin/bash
+  with_items:
+    - phpenmod mbstring
+    - touch phpenmod.ok
+-
+  name: Restart Apache
+  ansible.builtin.service:
+    name: apache2
+    state: restarted
