@@ -8,18 +8,19 @@ packages:
   - mariadb-client
   - bison
   - flex
-  - php7.4
-  - php7.4-curl
-  - php7.4-cli
-  - php7.4-pdo
-  - php7.4-mysql
+  - php8.2
+  - php8.2-curl
+  - php8.2-cli
+  - php8.2-pdo
+  - php8.2-mysql
+  - php8.2-gd
+  - php8.2-mbstring
+  - php8.2-intl
+  - php8.2-common
+  - php8.2-xml
+  - php8.2-intl
   - php-pear
-  - php7.4-gd
-  - php7.4-mbstring
-  - php7.4-intl
-  - php7.4-xml
   - curl
-  - cron
   - sox
   - libncurses5-dev
   - libssl-dev
@@ -45,10 +46,11 @@ packages:
   - libneon27-dev
   - libsrtp2-dev
   - libspandsp-dev
-  - libedit-dev
+  - libjansson-dev
   - sudo
   - subversion
   - libtool-bin
+  - python3-dev
   - unixodbc
   - dirmngr
   - sendmail-bin
@@ -56,6 +58,13 @@ packages:
   - nodejs
   - xz-utils
   - python3-pip
-  - net-tools
+  - python3-mysqldb
   ## Needed for debconf-set-selections
   - debconf-utils
+  - sngrep
+  - lame
+  - ffmpeg
+  - vim
+  - expect
+  - odbc-mariadb
+  - cron

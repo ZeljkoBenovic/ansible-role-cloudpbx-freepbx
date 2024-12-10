@@ -1,5 +1,4 @@
-## Deploy Cloud PBX Freepbx ####
-## Updated to work on Ubuntu Server 20.04 and 22.04###
+## Supports Ubuntu 24.x (minimal)
 ---
 -
   name: Depoying CloudPBX Freepbx
@@ -7,8 +6,9 @@
   become: true
   vars:
     db_root_pass: "{{ lookup('env','DB_ROOT_PASS') }}"
-    fpbx_ver: 16.0
-    ast_ver: 20
+    fpbx_ver: 17.0
+    ast_ver: 21
+    nodejs_ver: 18
   roles:
     - sysprep
     - db_prep

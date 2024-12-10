@@ -1,0 +1,2 @@
+[fpbx]
+fpbx01 ansible_connection=ssh ansible_host=<host ip> ansible_ssh_pass=<ssh root pass> ansible_user=root

@@ -1,5 +1,5 @@
 ---
 packages:
   - phpmyadmin
-  - php-mbstring
-  - gettext
+  - php8.2-mbstring
+  - php8.2-gettext

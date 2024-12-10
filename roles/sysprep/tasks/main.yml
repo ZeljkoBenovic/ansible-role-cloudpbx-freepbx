@@ -1,73 +1,38 @@
 ---
-- name: Initial system upgrade
-  ansible.builtin.apt:
-    upgrade: full
-    update_cache: true
-
-- name: Add NodeJS Repo
-  ansible.builtin.shell: |
-    set -o pipefail
-    curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash - > /tmp/node.log
+-
+  name: "Add NodeJS Repo"
+  shell: curl -sL https://deb.nodesource.com/setup_{{nodejs_ver}}.x | sudo -E bash - > /tmp/node.log
   args:
     creates: /tmp/node.log
-    warn: false
-    executable: /bin/bash
-
-- name: Install php7.4 install prerequisite
-  ansible.builtin.apt:
-    name: software-properties-common
+- name: Add PHP repo
+  apt_repository:
+    validate_certs: no
+    repo: 'ppa:ondrej/php'
     state: present
-
-- name: Add php7.4 repo
-  ansible.builtin.apt_repository:
-    repo: ppa:ondrej/php
-
-- name: Updating System
-  ansible.builtin.apt:
+-
+  name: "Updating System"
+  apt:
     upgrade: full
-    update_cache: true
-
-- name: Installing Packages
-  ansible.builtin.apt:
-    name: "{{ packages }}"
+    update_cache: yes
+-
+  name: Installing Packages
+  apt:
+    name: "{{packages}}"
     state: present
-
-- name: Install Ubuntu20.04 specific package
-  ansible.builtin.apt:
-    name: python-dev
-    state: present
-  when: ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '20'
-
-- name: Install Ubuntu22.04 specific package
-  ansible.builtin.apt:
-    name: python3-dev
-    state: present
-  when: ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '22'
-
-- name: Install pymysql ansible modules
-  ansible.builtin.pip:
-    name: pymysql
-    state: present
-
-- name: Set defatult php7.4 as default
-  ansible.builtin.shell: update-alternatives --set php /usr/bin/php7.4 > php-default.ok
-  args:
-    creates: php-default.ok
-    executable: /bin/bash
-
-- name: Set swappiness
-  ansible.builtin.lineinfile:
+-
+  name: Set swappiness
+  lineinfile:
     path: /etc/sysctl.conf
     line: vm.swappiness=10
-    backup: true
+    backup: yes
     state: present
-
-- name: Install Legacy Pear Requirements
-  ansible.builtin.shell:
-    cmd: pear install Console_Getopt > /tmp/pear.log
-    creates: /tmp/pear.log
-  when: fpbx_ver == '15.0'
-  ignore_errors: true
-
-- name: Reboot host
-  ansible.builtin.reboot:
+- 
+  name: Set php8.2 version for cli
+  shell: "{{item}}"
+  with_items:
+    - update-alternatives --set php /usr/bin/php8.2 
+    - update-alternatives --set phar /usr/bin/phar8.2 
+    - update-alternatives --set phar.phar /usr/bin/phar.phar8.2
+-
+  name: Reboot host
+  reboot:
