@@ -54,6 +54,7 @@ packages:
   - sendmail-bin
   - sendmail
   - nodejs
+  - npm
   - xz-utils
   - python3-pip
   - net-tools
