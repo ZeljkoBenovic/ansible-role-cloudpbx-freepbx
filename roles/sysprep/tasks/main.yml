@@ -1,17 +1,18 @@
 ---
+- name: Remove legacy NodeSource repo definition before apt refresh
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/nodesource.list
+    state: absent
+
+- name: Remove legacy NodeSource trusted key
+  ansible.builtin.file:
+    path: /etc/apt/trusted.gpg.d/nodesource.asc
+    state: absent
+
 - name: Initial system upgrade
   ansible.builtin.apt:
     upgrade: full
     update_cache: true
-
-- name: Add NodeJS Repo
-  ansible.builtin.shell: |
-    set -o pipefail
-    curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash - > /tmp/node.log
-  args:
-    creates: /tmp/node.log
-    warn: false
-    executable: /bin/bash
 
 - name: Install php7.4 install prerequisite
   ansible.builtin.apt:
